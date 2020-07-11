@@ -18,7 +18,7 @@ def real_estate_pre_processing(df):
 
 	""" partioning data into features and target """
 
-	X = df.drop([df.columns[0], df.columns[-1]], axis = 1)
+	X = df.drop([df.columns [0], df.columns[-1]], axis = 1)
 	y = df[df.columns[-1]]
 
 	return X, y
@@ -46,7 +46,9 @@ def min_max_scaler(X):
 
 
 
-class LinearRegression:
+class SimpleLinearRegression:
+
+	""" Linear Regression With One Predictor or Feature"""
 
 	def __init__(self):
 		self.coef_ = []
@@ -124,6 +126,91 @@ class LinearRegression:
 		return root_mean_square_error
 
 
+class LinearRegression:
+
+	""" Linear Regression with multiple features """
+
+	def __init__(self, learning_rate = 1e-3, max_iter = 1000):
+
+		self.num_feats = int
+		self.train_size = int
+		self.weights = np.array 
+		self.y_train = np.array 
+		self.input_matrix = np.array
+
+		self.learning_rate = learning_rate   #Learning rate for gradient descent
+		self.max_iter = max_iter 	#Number of iterations to run gradient descent
+		self.cost_threshold = 0.1 * learning_rate  #stopping criterion for gradien descent
+
+	def fit(self, X, y):
+
+		"""
+			Adjust weights to training data
+
+		"""
+
+		self.train_size = X.shape[0]
+		self.num_feats = X.shape[1]
+		self.input_matrix = np.append(X, np.ones(self.train_size).reshape(-1, 1), axis = 1)   #Add Column with Ones for intercept term 
+		self.y_train = y.to_numpy()
+		self.weights = np.zeros(self.num_feats + 1) #Extra +1 for the intercept
+
+
+		#optimize weights
+		prev_cost = float("inf")
+		for i in range(self.max_iter):
+			cost = self._update_weights()
+
+			if i%100 ==0 or i == self.max_iter:
+				print("Cost after {} iterations is: {}".format(i, cost))
+			if abs(prev_cost -cost) < self.cost_threshold*prev_cost:
+				print("Cost after {} iterations is: {}".format(i, cost))
+				break
+			prev_cost = cost
+
+	def _update_weights(self):
+
+		"""
+			Cost Function:
+				l(w) = (1/n) * (((y - wX)^2) 
+
+			Gradient:
+				delta_w = dl/dw = (2/n)*( ((y - wX)*(-X))
+							
+							 (or)
+
+				delta_w = dl/dw = (2/n)*( ((wX - y)*(X)) 
+
+			Gradient Descent:
+				w = w - (learning_rate * delta_w)
+
+		"""
+
+		y_pred = (self.weights * self.input_matrix).sum(axis = 1)  # y_pred = wX
+
+		cost = (1/self.train_size) * (((self.y_train - y_pred) ** 2).sum(axis = 0))  
+
+		err = (y_pred - self.y_train).reshape(-1, 1)  # err = wX - y
+
+		delta_w = (2/self.train_size) * ((err * self.input_matrix).sum(axis = 0)) #delta_w = (2/n)*( (wX - y)*(X)) 
+
+		self.weights = self.weights - (self.learning_rate * delta_w) 
+
+		return cost
+
+
+	def predict(self, X):
+
+		""" Make predictions on given X using trained model """
+
+		size = X.shape[0]
+		X = np.append(X, np.ones(size).reshape(-1, 1), axis = 1)
+
+		y_pred = (self.weights * X).sum(axis = 1)
+
+		return y_pred 
+
+
 if __name__ == '__main__':
 
 
@@ -155,7 +242,7 @@ if __name__ == '__main__':
 
 
 	# Create a LinearRegression Model Object
-	lin_reg = LinearRegression()
+	lin_reg = SimpleLinearRegression()
 
 	#Train our LinearRegression Model
 	lin_reg.fit(X_train, y_train)
@@ -209,21 +296,18 @@ if __name__ == '__main__':
 
 
 
-	lin_reg = LinearRegression()
+	lin_reg = LinearRegression(learning_rate = 1e-7, max_iter = 2000)
 	lin_reg.fit(X_train, y_train)
 
-	print('Linear Regression Model Coefficients (W): {}'.format(lin_reg.coef_))
-	print('Linear Regression Model Intercept (b): {}'.format(lin_reg.intercept_))
+	print('Linear Regression Model Coefficients (W): {}'.format(lin_reg.weights[:-1]))
+	print('Linear Regression Model Intercept (b): {}'.format(lin_reg.weights[-1]))
 
-	#Evaluating Model through RMSE
-	Training_error = lin_reg.score(X_train, y_train)
-	print("RMSE for training data: {:.3f}".format(Training_error))
-
-	Test_error = lin_reg.score(X_test, y_test)
-	print("RMSE for training data: {:.3f}".format(Test_error))
+	#Evaluating Model through MAE
+	print("\nMean Absolute Percentage Error(for train data): {}".format(mean_absolute_percentage_error(y_train, lin_reg.predict(X_train))))
+	print("Mean Absolute Percentage Error(for test data): {}".format(mean_absolute_percentage_error(y_test, lin_reg.predict(X_test))))
 	
 
 	#If you apply normalization to your trained data, then you need to apply same normalization to each query as well.
 	#Query Sample 1:
-	y_pred = lin_reg.predict([[2012.667,5.6,90.45606,9,24.97433,121.5431]])
+	y_pred = lin_reg.predict(np.array([[2012.667,5.6,90.45606,9,24.97433,121.5431]]))
 	print("Predicted target is: {}".format(y_pred))
