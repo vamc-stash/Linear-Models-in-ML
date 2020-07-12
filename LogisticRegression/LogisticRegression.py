@@ -3,6 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt 
 import math
 
+eps = np.finfo(float).eps
+
 def accuracy_score(y_true, y_pred):
 
 	"""	score = (y_true - y_pred) / len(y_true) """
@@ -94,6 +96,33 @@ class Logistic:
 		"""
 			Cost Function:
 				yhat = sigmoid(wX)
+				l(w) = -(1/n) * (y*log(yhat) + (1-y)*log(1-yhat))
+
+			Gradient:
+				delta_w = dl/dw = (1/n)*((yhat - y) * X)) 
+		
+			Gradient Descent:
+				w = w + (learning_rate * delta_w)
+
+		"""
+
+		y_pred = self.sigmoid((self.weights * self.input_matrix).sum(axis = 1))  # y_pred = sigmoid(wX)
+
+		cost = -(1/self.train_size) * (self.y_train*np.log(y_pred+eps) + (1-self.y_train)*np.log(1-y_pred+eps)).sum(axis = 0)
+
+		delta_w = (1/self.train_size) * (((y_pred - self.y_train).reshape(-1, 1) * self.input_matrix).sum(axis = 0))  #delta_w = (1/n)*((yhat - y) * X)) 
+
+		self.weights = self.weights - (self.learning_rate * delta_w) 
+
+		return cost
+
+	def _update_weightss(self):
+
+		"""
+			******** This Method is wrote only for understanding and it is not utilized anywhere in the algorithm ***********
+
+			Cost Function:
+				yhat = sigmoid(wX)
 				l(w) = (1/n) * (y - yhat)^2)
 
 			Gradient:
@@ -101,6 +130,10 @@ class Logistic:
 		
 			Gradient Descent:
 				w = w + (learning_rate * delta_w)
+
+			If we try to use the cost function of the linear regression in ‘Logistic Regression’ then it would 
+			be of no use as it would end up being a non-convex function with many local minimums, in which it 
+			would be very difficult to minimize the cost value and find the global minimum.
 
 		"""
 
@@ -187,7 +220,7 @@ if __name__ == '__main__':
 
 
 	# Create a Logistic Regression Model Object
-	logistic_clf = Logistic(learning_rate = 1e-5, max_iter = 2000)
+	logistic_clf = Logistic(learning_rate = 1e-5, max_iter = 5000)
 
 	#Train our Logistic Regression Model
 	logistic_clf.fit(X_train, y_train)
